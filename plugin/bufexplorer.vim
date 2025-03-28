@@ -701,7 +701,15 @@ function! BufExplorer(...)
     " Position the cursor in the newly displayed list on the line representing
     " the active buffer.  The active buffer is the line with the '%' character
     " in it.
-    execute search("%")
+    
+    let line_no = search("%")
+    if line_no == 0
+        "no match
+        call cursor(s:firstBufferLine, 1)
+    else
+        "match
+        call cursor(line_no, 1)
+    endif
 
     if exists('#User#BufExplorer_Started')
         " Notify that BufExplorer has started.  This is an opportunity to make
@@ -1060,6 +1068,12 @@ function! s:GetBufferInfo(onlyBufNbr)
         " filename with an embedded '"' is present.
         let buf = {"attributes": bits[0], "line": substitute(bits[-1], '\s*', '', '')}
         let buf._bufnr = str2nr(buf.attributes)
+
+        if match(bufname(buf._bufnr), "term://") == 0
+        "ignore terminals
+            continue
+        endif
+
         let all[buf._bufnr] = buf
     endfor
 
