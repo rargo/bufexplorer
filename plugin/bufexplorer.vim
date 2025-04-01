@@ -112,7 +112,9 @@ endfunction
 
 " Create commands {{{2
 command! -nargs=? -complete=custom,<SID>ActionArgs
-        \ BufExplorer :call BufExplorer(<f-args>)
+        \ BufExplorer :call BufExplorer(0, <f-args>)
+command! -nargs=? -complete=custom,<SID>ActionArgs
+        \ TerminalExplorer :call BufExplorer(1, <f-args>)
 command! -nargs=? -complete=custom,<SID>ActionArgs
         \ ToggleBufExplorer :call ToggleBufExplorer(<f-args>)
 command! BufExplorerHorizontalSplit :call BufExplorerHorizontalSplit()
@@ -615,7 +617,7 @@ endfunction
 " Args: `([action])`
 " Optional `action` argument must be taken from `s:actions`.  If not present,
 " `action` defaults to `g:bufExplorerDefaultAction`.
-function! BufExplorer(...)
+function! BufExplorer(selectTerminals, ...)
     if a:0 >= 1
         let action = a:1
     else
@@ -656,7 +658,7 @@ function! BufExplorer(...)
     " Forget any cached MRU ordering from previous invocations.
     unlet! s:mruOrder
 
-    let s:raw_buffer_listing = s:GetBufferInfo(0)
+    let s:raw_buffer_listing = s:GetBufferInfo(0, a:selectTerminals)
 
     call s:MRUGarbageCollectBufs()
     call s:MRUGarbageCollectTabs()
@@ -1028,7 +1030,7 @@ endfunction
 " - `.attributes`
 " - `.line`
 " Other fields will be populated by `s:CalculateBufferDetails()`.
-function! s:GetBufferInfo(onlyBufNbr)
+function! s:GetBufferInfo(onlyBufNbr, selectTerminals)
     redir => bufoutput
 
     " Below, `:silent buffers` allows capturing the output via `:redir` but
@@ -1069,9 +1071,14 @@ function! s:GetBufferInfo(onlyBufNbr)
         let buf = {"attributes": bits[0], "line": substitute(bits[-1], '\s*', '', '')}
         let buf._bufnr = str2nr(buf.attributes)
 
-        if match(bufname(buf._bufnr), "term://") == 0
-        "ignore terminals
-            continue
+        if a:selectTerminals > 0
+            if match(bufname(buf._bufnr), "term://") != 0
+                continue
+            endif
+        else
+            if match(bufname(buf._bufnr), "term://") == 0
+                continue
+            endif
         endif
 
         let all[buf._bufnr] = buf
@@ -1404,7 +1411,11 @@ function! s:DeleteBuffer(bufNbr, mode)
         " have changed attributes (as `:bd` only makes a buffer unlisted).
         " Regather information on this buffer, update the buffer list, and
         " redisplay.
-        let info = s:GetBufferInfo(a:bufNbr)
+        if match(bufname(a:bufNbr), "term://") == 0
+            let info = s:GetBufferInfo(a:bufNbr, 1)
+        else
+            let info = s:GetBufferInfo(a:bufNbr, 0)
+        endif
         let s:raw_buffer_listing[a:bufNbr] = info[a:bufNbr]
         call s:RedisplayBufferList()
     else
