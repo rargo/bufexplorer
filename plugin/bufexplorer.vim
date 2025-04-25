@@ -1161,7 +1161,7 @@ function! s:BuildBufferList()
 				if term_name != "null"
 					let term_info = term_info ..  ": " .. term_name .. " ]" 
 				else
-					let term_info = term_info ..  "]" 
+					let term_info = term_info ..  " ]" 
 				endif
 			else
 				if term_name != "null"
