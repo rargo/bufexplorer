@@ -1133,7 +1133,9 @@ function! s:BuildBufferList()
             continue
         endif
 
-        let row = [buf.attributes]
+		let row = []
+
+        let row += [buf.attributes]
 
         if exists("g:loaded_webdevicons")
             let row += [WebDevIconsGetFileTypeSymbol(buf.fullname, buf.isdir)]
@@ -1148,6 +1150,27 @@ function! s:BuildBufferList()
             let row += [buf[type]]
         endif
         let row += [buf.line]
+
+		let bufnr = buf._bufnr
+        if match(bufname(bufnr), "term://") == 0
+			let term_nr = getbufvar(bufnr, 'term_no', 'null')
+			let term_name = getbufvar(bufnr, 'term_name', 'null')
+			let term_info = ""
+			if term_nr != "null"
+				let term_info = term_info ..  "        [ Terminal " .. term_nr
+				if term_name != "null"
+					let term_info = term_info ..  ": " .. term_name .. " ]" 
+				else
+					let term_info = term_info ..  "]" 
+				endif
+			else
+				if term_name != "null"
+					let term_info = term_info ..  "        [ Terminal: " .. term_name .. " ]" 
+				endif
+			endif
+			let row += [term_info]
+        endif
+
         call add(table, row)
     endfor
 
